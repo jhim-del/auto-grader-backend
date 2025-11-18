@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>프롬프트 경진대회 자동 평가 플랫폼</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+        }
+        
+        :root {
+            --color-primary: #FA0030;
+            --color-secondary: #93E6F5;
+            --color-dark: #850028;
+            --color-light-pink: #FED3DB;
+            --color-light-blue: #D4F3FC;
+            --color-gray: #D2D5D9;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #FED3DB 0%, #D4F3FC 100%);
+            min-height: 100vh;
+        }
+        
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-primary:hover {
+            background: var(--color-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(250, 0, 48, 0.3);
+        }
+        
+        .btn-secondary {
+            background: var(--color-secondary);
+            color: var(--color-dark);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .btn-secondary:hover {
+            background: #7DD4E6;
+            transform: translateY(-2px);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            transform: translateY(-4px);
+        }
+        
+        .nav-item {
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            font-weight: 500;
+        }
+        
+        .nav-item:hover {
+            background: var(--color-light-pink);
+            border-bottom-color: var(--color-primary);
+        }
+        
+        .nav-item.active {
+            background: var(--color-light-pink);
+            border-bottom-color: var(--color-primary);
+            font-weight: 700;
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        
+        .status-pending {
+            background: var(--color-gray);
+            color: #666;
+        }
+        
+        .status-grading {
+            background: #FFF4E6;
+            color: #FF9800;
+        }
+        
+        .status-completed {
+            background: #E8F5E9;
+            color: #4CAF50;
+        }
+        
+        .status-error {
+            background: #FFEBEE;
+            color: #F44336;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 2rem;
+            background: var(--color-gray);
+            border-radius: 1rem;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-primary), var(--color-dark));
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        thead {
+            background: var(--color-primary);
+            color: white;
+        }
+        
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--color-gray);
+        }
+        
+        tbody tr:hover {
+            background: var(--color-light-pink);
+        }
+        
+        .file-upload {
+            border: 2px dashed var(--color-primary);
+            border-radius: 1rem;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload:hover {
+            background: var(--color-light-pink);
+            border-color: var(--color-dark);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--color-primary);
+            margin: 0.5rem 0;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .spinner {
+            border: 3px solid var(--color-gray);
+            border-top: 3px solid var(--color-primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 2rem auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .alert-success {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .alert-error {
+            background: #FFEBEE;
+            color: #C62828;
+            border-left: 4px solid #F44336;
+        }
+        
+        .alert-info {
+            background: var(--color-light-blue);
+            color: #01579B;
+            border-left: 4px solid var(--color-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <!-- Header -->
+        <div class="card mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-bold mb-2" style="color: var(--color-primary);">
+                        🏆 프롬프트 경진대회 자동 평가 플랫폼
+                    </h1>
+                    <p class="text-gray-600">GPT-4o 기반 자동 채점 시스템</p>
+                </div>
+                <div class="text-right">
+                    <div class="text-sm text-gray-500">Competition ID</div>
+                    <div class="text-3xl font-bold" style="color: var(--color-dark);" id="competitionId">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation -->
+        <div class="card mb-8 p-0">
+            <div class="flex overflow-x-auto">
+                <div class="nav-item active" data-page="overview">📊 대회 개요</div>
+                <div class="nav-item" data-page="participants">👥 참가자 관리</div>
+                <div class="nav-item" data-page="submissions">📝 제출물 관리</div>
+                <div class="nav-item" data-page="grading">⚡ 채점 제어</div>
+                <div class="nav-item" data-page="leaderboard">🏅 리더보드</div>
+                <div class="nav-item" data-page="report">📈 분석 리포트</div>
+            </div>
+        </div>
+        
+        <!-- Alert Container -->
+        <div id="alertContainer"></div>
+        
+        <!-- Pages -->
+        <div id="pages">
+            <!-- Overview Page -->
+            <div class="page active" data-page="overview">
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">대회 정보</h2>
+                    <div id="overviewContent">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Participants Page -->
+            <div class="page hidden" data-page="participants">
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">참가자 업로드</h2>
+                    <div class="file-upload" id="participantsUpload">
+                        <div class="text-4xl mb-4">📁</div>
+                        <div class="text-xl font-bold mb-2">CSV 파일을 드래그하거나 클릭하세요</div>
+                        <div class="text-gray-500">형식: name, email, student_id</div>
+                        <input type="file" id="participantsFile" accept=".csv" class="hidden">
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">참가자 목록</h2>
+                    <div id="participantsContent">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submissions Page -->
+            <div class="page hidden" data-page="submissions">
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">제출물 업로드</h2>
+                    <div class="file-upload" id="submissionsUpload">
+                        <div class="text-4xl mb-4">📦</div>
+                        <div class="text-xl font-bold mb-2">ZIP 파일을 드래그하거나 클릭하세요</div>
+                        <div class="text-gray-500">형식: participantname_assignmentname.txt</div>
+                        <input type="file" id="submissionsFile" accept=".zip" class="hidden">
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">제출물 목록</h2>
+                    <div id="submissionsContent">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Grading Page -->
+            <div class="page hidden" data-page="grading">
+                <div class="card mb-6">
+                    <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">채점 제어</h2>
+                    <div id="gradingControls">
+                        <button class="btn-primary text-xl py-4 px-8 w-full" id="startGradingBtn">
+                            ⚡ 채점 시작
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">채점 진행 상황</h2>
+                    <div id="gradingStatus">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Leaderboard Page -->
+            <div class="page hidden" data-page="leaderboard">
+                <div class="card">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold" style="color: var(--color-primary);">🏅 리더보드</h2>
+                        <button class="btn-secondary" onclick="loadLeaderboard()">🔄 새로고침</button>
+                    </div>
+                    <div id="leaderboardContent">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Report Page -->
+            <div class="page hidden" data-page="report">
+                <div class="card mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold" style="color: var(--color-primary);">📈 분석 리포트</h2>
+                        <button class="btn-secondary" onclick="loadReport()">🔄 새로고침</button>
+                    </div>
+                </div>
+                
+                <div id="reportContent">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Configuration
+        const API_BASE = window.location.origin;
+        const COMPETITION_ID = 2; // Hardcoded for demo
+        
+        // State
+        let gradingInterval = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('competitionId').textContent = COMPETITION_ID;
+            setupNavigation();
+            setupFileUploads();
+            loadOverview();
+        });
+        
+        // Navigation
+        function setupNavigation() {
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const page = item.dataset.page;
+                    switchPage(page);
+                });
+            });
+        }
+        
+        function switchPage(page) {
+            // Update nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.page === page);
+            });
+            
+            // Update pages
+            document.querySelectorAll('.page').forEach(p => {
+                p.classList.toggle('hidden', p.dataset.page !== page);
+                p.classList.toggle('active', p.dataset.page === page);
+            });
+            
+            // Load page data
+            switch(page) {
+                case 'overview': loadOverview(); break;
+                case 'participants': loadParticipants(); break;
+                case 'submissions': loadSubmissions(); break;
+                case 'grading': loadGradingStatus(); break;
+                case 'leaderboard': loadLeaderboard(); break;
+                case 'report': loadReport(); break;
+            }
+        }
+        
+        // File uploads
+        function setupFileUploads() {
+            // Participants upload
+            const participantsUpload = document.getElementById('participantsUpload');
+            const participantsFile = document.getElementById('participantsFile');
+            
+            participantsUpload.addEventListener('click', () => participantsFile.click());
+            participantsFile.addEventListener('change', handleParticipantsUpload);
+            
+            // Submissions upload
+            const submissionsUpload = document.getElementById('submissionsUpload');
+            const submissionsFile = document.getElementById('submissionsFile');
+            
+            submissionsUpload.addEventListener('click', () => submissionsFile.click());
+            submissionsFile.addEventListener('change', handleSubmissionsUpload);
+            
+            // Start grading button
+            document.getElementById('startGradingBtn').addEventListener('click', startGrading);
+        }
+        
+        async function handleParticipantsUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                showAlert('참가자 업로드 중...', 'info');
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}/participants/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                showAlert(data.message, 'success');
+                loadParticipants();
+            } catch (error) {
+                showAlert('업로드 실패: ' + error.message, 'error');
+            }
+        }
+        
+        async function handleSubmissionsUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                showAlert('제출물 업로드 중...', 'info');
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}/submissions/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                showAlert(data.message, 'success');
+                loadSubmissions();
+            } catch (error) {
+                showAlert('업로드 실패: ' + error.message, 'error');
+            }
+        }
+        
+        // Load functions
+        async function loadOverview() {
+            try {
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}`);
+                const data = await response.json();
+                
+                const html = `
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">대회명</div>
+                            <div class="text-xl font-bold mt-2" style="color: var(--color-dark);">${data.name || 'N/A'}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">참가자</div>
+                            <div class="stat-value">${data.participants.length}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">과제</div>
+                            <div class="stat-value">${data.assignments.length}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">제출물</div>
+                            <div class="stat-value">${data.submissions.length}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h3 class="text-xl font-bold mb-4" style="color: var(--color-dark);">과제 목록</h3>
+                        ${data.assignments.map(a => `
+                            <div class="bg-gray-50 p-4 rounded-lg mb-3">
+                                <div class="font-bold text-lg">${a.name}</div>
+                                <div class="text-gray-600 mt-2">${a.prompt}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                document.getElementById('overviewContent').innerHTML = html;
+            } catch (error) {
+                document.getElementById('overviewContent').innerHTML = 
+                    '<div class="alert alert-error">데이터 로드 실패</div>';
+            }
+        }
+        
+        async function loadParticipants() {
+            try {
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}/participants`);
+                const participants = await response.json();
+                
+                if (participants.length === 0) {
+                    document.getElementById('participantsContent').innerHTML = 
+                        '<div class="alert alert-info">참가자가 없습니다. CSV 파일을 업로드하세요.</div>';
+                    return;
+                }
+                
+                const html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>이름</th>
+                                    <th>이메일</th>
+                                    <th>학번</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${participants.map(p => `
+                                    <tr>
+                                        <td>${p.id}</td>
+                                        <td><strong>${p.name}</strong></td>
+                                        <td>${p.email || '-'}</td>
+                                        <td>${p.student_id || '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 text-gray-600">총 ${participants.length}명</div>
+                `;
+                
+                document.getElementById('participantsContent').innerHTML = html;
+            } catch (error) {
+                document.getElementById('participantsContent').innerHTML = 
+                    '<div class="alert alert-error">데이터 로드 실패</div>';
+            }
+        }
+        
+        async function loadSubmissions() {
+            try {
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}/submissions`);
+                const submissions = await response.json();
+                
+                if (submissions.length === 0) {
+                    document.getElementById('submissionsContent').innerHTML = 
+                        '<div class="alert alert-info">제출물이 없습니다. ZIP 파일을 업로드하세요.</div>';
+                    return;
+                }
+                
+                const html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>참가자</th>
+                                    <th>과제</th>
+                                    <th>상태</th>
+                                    <th>점수</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${submissions.map(s => `
+                                    <tr>
+                                        <td>${s.id}</td>
+                                        <td><strong>${s.participant_name}</strong></td>
+                                        <td>${s.assignment_name}</td>
+                                        <td><span class="status-badge status-${s.status}">${getStatusText(s.status)}</span></td>
+                                        <td>${s.score ? s.score.toFixed(2) : '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 text-gray-600">총 ${submissions.length}개</div>
+                `;
+                
+                document.getElementById('submissionsContent').innerHTML = html;
+            } catch (error) {
+                document.getElementById('submissionsContent').innerHTML = 
+                    '<div class="alert alert-error">데이터 로드 실패</div>';
+            }
+        }
+        
+        async function loadGradingStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}/grading-status`);
+                const status = await response.json();
+                
+                const total = status.total;
+                const completed = status.completed;
+                const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+                
+                const html = `
+                    <div class="stats-grid mb-6">
+                        <div class="stat-card">
+                            <div class="stat-label">전체</div>
+                            <div class="stat-value">${total}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">대기</div>
+                            <div class="stat-value" style="color: #9E9E9E;">${status.pending}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">채점 중</div>
+                            <div class="stat-value" style="color: #FF9800;">${status.grading}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">완료</div>
+                            <div class="stat-value" style="color: #4CAF50;">${status.completed}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">오류</div>
+                            <div class="stat-value" style="color: #F44336;">${status.error}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <div class="flex justify-between mb-2">
+                            <span class="font-bold">진행률</span>
+                            <span class="font-bold">${percentage}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${percentage}%">
+                                ${completed} / ${total}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${status.grading > 0 ? '<div class="alert alert-info">채점이 진행 중입니다...</div>' : ''}
+                `;
+                
+                document.getElementById('gradingStatus').innerHTML = html;
+                
+                // Auto-refresh if grading
+                if (status.grading > 0 && !gradingInterval) {
+                    gradingInterval = setInterval(loadGradingStatus, 3000);
+                } else if (status.grading === 0 && gradingInterval) {
+                    clearInterval(gradingInterval);
+                    gradingInterval = null;
+                }
+            } catch (error) {
+                document.getElementById('gradingStatus').innerHTML = 
+                    '<div class="alert alert-error">데이터 로드 실패</div>';
+            }
+        }
+        
+        async function startGrading() {
+            if (!confirm('채점을 시작하시겠습니까? 모든 대기 중인 제출물이 채점됩니다.')) {
+                return;
+            }
+            
+            try {
+                showAlert('채점을 시작합니다...', 'info');
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}/grade`, {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                showAlert(data.message, 'success');
+                
+                // Start auto-refresh
+                setTimeout(() => loadGradingStatus(), 1000);
+            } catch (error) {
+                showAlert('채점 시작 실패: ' + error.message, 'error');
+            }
+        }
+        
+        async function loadLeaderboard() {
+            try {
+                document.getElementById('leaderboardContent').innerHTML = '<div class="spinner"></div>';
+                
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}/leaderboard`);
+                const leaderboard = await response.json();
+                
+                if (leaderboard.length === 0) {
+                    document.getElementById('leaderboardContent').innerHTML = 
+                        '<div class="alert alert-info">채점 완료된 제출물이 없습니다.</div>';
+                    return;
+                }
+                
+                const html = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>순위</th>
+                                    <th>이름</th>
+                                    <th>학번</th>
+                                    <th>평균 점수</th>
+                                    <th>채점 완료</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${leaderboard.map((p, idx) => `
+                                    <tr ${idx < 3 ? 'style="background: linear-gradient(90deg, #FED3DB 0%, white 100%);"' : ''}>
+                                        <td>
+                                            ${p.rank ? `<strong style="font-size: 1.5rem;">${p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : p.rank}</strong>` : '-'}
+                                        </td>
+                                        <td><strong>${p.name}</strong></td>
+                                        <td>${p.student_id || '-'}</td>
+                                        <td><strong style="font-size: 1.25rem; color: var(--color-primary);">${p.average_score ? p.average_score.toFixed(2) : '-'}</strong></td>
+                                        <td>${p.graded_count} / ${p.submission_count}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                document.getElementById('leaderboardContent').innerHTML = html;
+            } catch (error) {
+                document.getElementById('leaderboardContent').innerHTML = 
+                    '<div class="alert alert-error">데이터 로드 실패</div>';
+            }
+        }
+        
+        async function loadReport() {
+            try {
+                document.getElementById('reportContent').innerHTML = '<div class="card"><div class="spinner"></div></div>';
+                
+                const response = await fetch(`${API_BASE}/competitions/${COMPETITION_ID}/report`);
+                const report = await response.json();
+                
+                if (report.message) {
+                    document.getElementById('reportContent').innerHTML = 
+                        `<div class="card"><div class="alert alert-info">${report.message}</div></div>`;
+                    return;
+                }
+                
+                const stats = report.overall_statistics;
+                
+                const html = `
+                    <div class="card mb-6">
+                        <h3 class="text-xl font-bold mb-4" style="color: var(--color-dark);">전체 통계</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-label">총 제출물</div>
+                                <div class="stat-value">${stats.total_submissions}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">평균 점수</div>
+                                <div class="stat-value">${stats.mean_score}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">중앙값</div>
+                                <div class="stat-value">${stats.median_score}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">표준편차</div>
+                                <div class="stat-value">${stats.std_dev}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">최저 점수</div>
+                                <div class="stat-value" style="color: #F44336;">${stats.min_score}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-label">최고 점수</div>
+                                <div class="stat-value" style="color: #4CAF50;">${stats.max_score}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mb-6">
+                        <h3 class="text-xl font-bold mb-4" style="color: var(--color-dark);">점수 분포</h3>
+                        <canvas id="scoreDistChart" height="80"></canvas>
+                    </div>
+                    
+                    <div class="card mb-6">
+                        <h3 class="text-xl font-bold mb-4" style="color: var(--color-dark);">과제별 통계</h3>
+                        <canvas id="assignmentChart" height="80"></canvas>
+                    </div>
+                    
+                    <div class="card">
+                        <h3 class="text-xl font-bold mb-4" style="color: var(--color-dark);">상위 10명</h3>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>순위</th>
+                                        <th>이름</th>
+                                        <th>평균 점수</th>
+                                        <th>제출물 수</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${report.top_performers.map((p, idx) => `
+                                        <tr>
+                                            <td><strong>${idx + 1}</strong></td>
+                                            <td><strong>${p.name}</strong></td>
+                                            <td><strong style="color: var(--color-primary);">${p.avg_score}</strong></td>
+                                            <td>${p.submission_count}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('reportContent').innerHTML = html;
+                
+                // Draw charts
+                drawScoreDistChart(report.score_distribution);
+                drawAssignmentChart(report.assignment_statistics);
+                
+            } catch (error) {
+                document.getElementById('reportContent').innerHTML = 
+                    '<div class="card"><div class="alert alert-error">데이터 로드 실패</div></div>';
+            }
+        }
+        
+        function drawScoreDistChart(distribution) {
+            const ctx = document.getElementById('scoreDistChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(distribution),
+                    datasets: [{
+                        label: '제출물 수',
+                        data: Object.values(distribution),
+                        backgroundColor: 'rgba(250, 0, 48, 0.7)',
+                        borderColor: 'rgba(250, 0, 48, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function drawAssignmentChart(assignments) {
+            const ctx = document.getElementById('assignmentChart');
+            if (!ctx) return;
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: assignments.map(a => a.assignment_name),
+                    datasets: [{
+                        label: '평균 점수',
+                        data: assignments.map(a => a.avg_score || 0),
+                        backgroundColor: 'rgba(147, 230, 245, 0.7)',
+                        borderColor: 'rgba(147, 230, 245, 1)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Utility functions
+        function getStatusText(status) {
+            const map = {
+                'pending': '대기',
+                'grading': '채점 중',
+                'completed': '완료',
+                'error': '오류'
+            };
+            return map[status] || status;
+        }
+        
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
