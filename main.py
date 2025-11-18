@@ -592,14 +592,34 @@ async def generate_report(competition_id: int):
         "generated_at": datetime.now().isoformat()
     }
 
-# Mount static files (frontend will be here)
-if os.path.exists("static"):
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-    
-    @app.get("/app", response_class=HTMLResponse)
-    async def serve_frontend():
-        """Serve frontend application"""
-        return FileResponse("static/index.html")
+# ==================== STATIC FILES & FRONTEND ====================
+
+# Create static directory if it doesn't exist
+os.makedirs("static", exist_ok=True)
+
+# Mount static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+@app.get("/app", response_class=HTMLResponse)
+async def serve_frontend():
+    """Serve frontend application"""
+    static_index = os.path.join("static", "index.html")
+    if os.path.exists(static_index):
+        return FileResponse(static_index)
+    else:
+        # Return a simple message if index.html doesn't exist yet
+        return HTMLResponse("""
+        <html>
+            <head><title>Auto-Grader</title></head>
+            <body style="font-family: sans-serif; padding: 2rem; text-align: center;">
+                <h1>🚀 Auto-Grader Platform</h1>
+                <p>프론트엔드 파일을 업로드 중입니다...</p>
+                <p>잠시 후 다시 시도해주세요.</p>
+                <hr>
+                <p><a href="/docs">API 문서 보기</a></p>
+            </body>
+        </html>
+        """)
 
 if __name__ == "__main__":
     import uvicorn
