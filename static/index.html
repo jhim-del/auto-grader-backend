@@ -388,18 +388,37 @@
     <script>
         // Configuration
         const API_BASE = window.location.origin;
-        const COMPETITION_ID = 2; // Hardcoded for demo
+        let COMPETITION_ID = 1; // Default, will be auto-detected
         
         // State
         let gradingInterval = null;
         
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Auto-detect competition ID
+            await detectCompetitionId();
             document.getElementById('competitionId').textContent = COMPETITION_ID;
             setupNavigation();
             setupFileUploads();
             loadOverview();
         });
+        
+        // Auto-detect competition ID
+        async function detectCompetitionId() {
+            try {
+                const response = await fetch(`${API_BASE}/competitions`);
+                const competitions = await response.json();
+                if (competitions && competitions.length > 0) {
+                    // Use the latest competition (last in array)
+                    COMPETITION_ID = competitions[competitions.length - 1].id;
+                    console.log('Auto-detected Competition ID:', COMPETITION_ID);
+                } else {
+                    console.warn('No competitions found, using default ID:', COMPETITION_ID);
+                }
+            } catch (error) {
+                console.error('Failed to auto-detect competition:', error);
+            }
+        }
         
         // Navigation
         function setupNavigation() {
