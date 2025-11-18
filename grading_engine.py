@@ -29,7 +29,7 @@ def grade_submission(task_prompt: str, user_prompt: str, num_runs: int = 3) -> d
             
             # Execute the user's prompt
             execution_response = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": task_prompt},
                     {"role": "user", "content": user_prompt}
@@ -71,7 +71,7 @@ def grade_submission(task_prompt: str, user_prompt: str, num_runs: int = 3) -> d
 """
             
             evaluation_response = client.chat.completions.create(
-                model="gpt-4o",
+                model="gpt-4o-mini",
                 messages=[
                     {"role": "system", "content": "You are a prompt evaluation expert. Always respond in valid JSON format."},
                     {"role": "user", "content": evaluation_prompt}
