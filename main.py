@@ -27,8 +27,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Database setup
-DB_PATH = "auto_grader.db"
+# Database setup with Railway Volume support
+DATA_DIR = os.getenv("DATA_DIR", ".")
+os.makedirs(DATA_DIR, exist_ok=True)
+DB_PATH = os.path.join(DATA_DIR, "auto_grader.db")
+print(f"[DB] Database path: {DB_PATH}")
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
