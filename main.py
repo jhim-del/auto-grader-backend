@@ -273,11 +273,23 @@ async def upload_submissions(competition_id: int, file: UploadFile = File(...)):
     zip_file = zipfile.ZipFile(io.BytesIO(content))
     
     submissions_added = 0
+    skipped = []
     
     for file_name in zip_file.namelist():
-        if file_name.endswith('.txt'):
+        # Try to decode filename (handle Korean filenames)
+        try:
+            # Try UTF-8 first
+            decoded_name = file_name
+        except:
+            try:
+                # Try CP949 (Korean Windows encoding)
+                decoded_name = file_name.encode('cp437').decode('utf-8')
+            except:
+                decoded_name = file_name
+        
+        if decoded_name.endswith('.txt'):
             # Parse filename: participantname_assignmentname.txt
-            base_name = os.path.splitext(file_name)[0]
+            base_name = os.path.splitext(decoded_name)[0]
             parts = base_name.split('_')
             
             if len(parts) >= 2:
@@ -298,11 +310,16 @@ async def upload_submissions(competition_id: int, file: UploadFile = File(...)):
                                 VALUES (?, ?, ?, ?, 'pending')""",
                              (competition_id, participant['id'], assignment['id'], prompt_text))
                     submissions_added += 1
+                else:
+                    skipped.append(f"{participant_name}_{assignment_name} (participant: {participant_name in participants}, assignment: {assignment_name in assignments})")
     
     conn.commit()
     conn.close()
     
-    return {"message": f"{submissions_added} submissions uploaded successfully"}
+    result = {"message": f"{submissions_added} submissions uploaded successfully"}
+    if skipped:
+        result["skipped"] = skipped
+    return result
 
 @app.get("/competitions/{competition_id}/submissions")
 async def get_submissions(competition_id: int):
