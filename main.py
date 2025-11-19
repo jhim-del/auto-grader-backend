@@ -106,7 +106,9 @@ def get_db():
 
 @app.get("/")
 async def root():
-    return {"message": "Auto-Grader API", "version": "1.0.0"}
+    """Redirect root to frontend application"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/app")
 
 @app.get("/health")
 async def health():
